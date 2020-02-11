@@ -107,7 +107,7 @@ check_options
 CDXJ_TEMP_PATH="${CDXJ_FINAL_PATH}_temp"
 CDXJ_TEMP2_PATH="${CDXJ_FINAL_PATH}_temp2"
 BLACKLIST_CDXJ_PATH=${COLLECTION_WARC_PATH}/blacklist_cdxj.txt
-WARCS_FILE_PATH=/tmp/warcs.txt
+WARCS_FILE_PATH=${CDXJ_INCREMENTAL_PATH}/warcs.txt
 
 if [ -z ${PARALLEL+x} ]; then 
 	PARALLEL_N=0
