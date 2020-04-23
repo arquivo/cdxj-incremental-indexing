@@ -9,7 +9,7 @@
 #
 function usage() {
 	{
-		echo "Usage: $0 -w /path_for_collection_with_warcs -x /path_for_cdxj_incremental_path -o /path_to_cdxj_file [-d] [-P] [-p 2] ";
+		echo "Usage: $0 -w /path_for_collection_with_warcs -x /path_for_cdxj_incremental_path -o /path_to_cdxj_file [-c collection_name] [-d] [-P] [-p 2] ";
 		echo "  -d                       debug mode, print more often"
 		echo "  -P                       run in parallel by default is the number of cpus "
 		echo "  -p PARALLEL_JOBS_COUNT   number of jobs that is run in parallel"
@@ -18,11 +18,12 @@ function usage() {
 }
 
 function readoptions() {
-	while getopts ":w:x:o:p:dP" OPTION; do
+	while getopts ":w:x:o:c:p:dP" OPTION; do
 	    case "${OPTION}" in
 	        w) COLLECTION_WARC_PATH=${OPTARG} ;;
 	        x) CDXJ_INCREMENTAL_PATH=${OPTARG} ;;
 			o) CDXJ_FINAL_PATH=${OPTARG} ;;
+			c) COLLECTION_NAME=${OPTARG} ;;
 			p) PARALLEL=true; PARALLEL_N=${OPTARG} ;;
 	        d) DEBUG=true ;;
 			P) PARALLEL=true ;;
@@ -147,6 +148,12 @@ echo "Concatenate all cdxj files and sort them"
 
 # use the cdxj folder to put the temporary file during the sort
 cat "${CDXJ_TEMP2_PATH}" | sort -T $(dirname $CDXJ_FINAL_PATH)/ > "${CDXJ_TEMP_PATH}"
+
+if [ ! -z ${COLLECTION_NAME+x} ]; then 
+	debug "App collection" 
+	# can not prefix it with run or print_run function
+	sed -i "s/}$/, \"collection\": \"${COLLECTION_NAME}\"}/g"  "${CDXJ_TEMP_PATH}"
+fi
 
 print_run "Remove temp 2 file" rm "${CDXJ_TEMP2_PATH}"
 
