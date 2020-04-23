@@ -89,7 +89,8 @@ function warc_cdxj_incremental_indexing() {
 
 	warc_cdxj_file_path=${CDXJ_INCREMENTAL_PATH}${warc_relative_path_no_file_extension}.cdxj
 
-	if [ -f "$warc_cdxj_file_path" ]; then
+	# skip if cdxj exist but reindex if warc is more recent than its previously indexed cdxj.
+	if [ -f "$warc_cdxj_file_path" ] && [ "$warc_cdxj_file_path" -nt "$warc_path" ]; then
 	    echo "Skipping... cdxj already exists warc: ${warc_path} cdxj: ${warc_cdxj_file_path}"
 	else 
 	    run mkdir -p "$(dirname "${warc_cdxj_file_path}")"
