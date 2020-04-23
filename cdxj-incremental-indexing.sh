@@ -141,7 +141,8 @@ find "${CDXJ_INCREMENTAL_PATH}" -type f -name "*.cdxj" -exec cat {} > "${CDXJ_TE
 
 echo "Concatenate all cdxj files and sort them" 
 
-cat "${CDXJ_TEMP2_PATH}" | sort -T /data/ > "${CDXJ_TEMP_PATH}"
+# use the cdxj folder to put the temporary file during the sort
+cat "${CDXJ_TEMP2_PATH}" | sort -T $(dirname $CDXJ_FINAL_PATH)/ > "${CDXJ_TEMP_PATH}"
 
 print_run "Remove temp 2 file" rm "${CDXJ_TEMP2_PATH}"
 
