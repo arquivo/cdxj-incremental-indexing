@@ -94,7 +94,7 @@ function warc_cdxj_incremental_indexing() {
 	    echo "Skipping... cdxj already exists warc: ${warc_path} cdxj: ${warc_cdxj_file_path}"
 	else 
 	    run mkdir -p "$(dirname "${warc_cdxj_file_path}")"
-	    print_run "Indexing... ${warc_path} to ${warc_cdxj_file_path}" cdx-indexer --postappend --cdxj --sort ${warc_cdxj_file_path} ${warc_path}
+	    print_run "Indexing... ${warc_path} to ${warc_cdxj_file_path}" cdx-indexer --postappend --cdxj ${warc_cdxj_file_path} ${warc_path}
 	fi
 
 	debug ""
