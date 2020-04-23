@@ -150,7 +150,7 @@ echo "Concatenate all cdxj files and sort them"
 cat "${CDXJ_TEMP2_PATH}" | sort -T $(dirname $CDXJ_FINAL_PATH)/ > "${CDXJ_TEMP_PATH}"
 
 if [ ! -z ${COLLECTION_NAME+x} ]; then 
-	debug "App collection" 
+	echo "Add collection to each line" 
 	# can not prefix it with run or print_run function
 	sed -i "s/}$/, \"collection\": \"${COLLECTION_NAME}\"}/g"  "${CDXJ_TEMP_PATH}"
 fi
