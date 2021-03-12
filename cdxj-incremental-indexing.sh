@@ -97,7 +97,7 @@ function warc_cdxj_incremental_indexing() {
         run mkdir -p "$(dirname "${warc_cdxj_file_path}")"
         
         echo "Indexing... ${warc_path} to ${warc_cdxj_file_path}"
-        run mkdir ${warc_cdxj_file_path}_tmp
+        
         cdx-indexer --postappend --cdxj ${warc_cdxj_file_path}_tmp ${warc_path}
 
         RETVAL=$?
