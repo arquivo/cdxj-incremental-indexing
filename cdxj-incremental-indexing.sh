@@ -98,7 +98,8 @@ function warc_cdxj_incremental_indexing() {
         
         echo "Indexing... ${warc_path} to ${warc_cdxj_file_path}"
         
-        cdx-indexer --postappend --cdxj ${warc_cdxj_file_path}_tmp ${warc_path}
+        touch ${warc_cdxj_file_path}_tmp
+        cdxj-indexer --post-append ${warc_path} -o ${warc_cdxj_file_path}_tmp
 
         RETVAL=$?
         if [[ $RETVAL != 0 ]]; then
