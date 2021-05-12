@@ -1,1 +1,1 @@
-cdxj-indexer
+pywb==2.5

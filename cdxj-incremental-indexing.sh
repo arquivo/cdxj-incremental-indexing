@@ -97,14 +97,12 @@ function warc_cdxj_incremental_indexing() {
         run mkdir -p "$(dirname "${warc_cdxj_file_path}")"
         
         echo "Indexing... ${warc_path} to ${warc_cdxj_file_path}"
-        
         touch ${warc_cdxj_file_path}_tmp
-        cdxj-indexer --post-append ${warc_path} -o ${warc_cdxj_file_path}_tmp
+        cdx-indexer --postappend --cdxj ${warc_path} -o ${warc_cdxj_file_path}_tmp
 
         RETVAL=$?
         if [[ $RETVAL != 0 ]]; then
             echo "Error indexing... ${warc_path} to ${warc_cdxj_file_path}"
-            rm ${warc_cdxj_file_path}_tmp
         fi
         # prevent the cdxj to have a not finished indexed state. It could have it if it's killed in the middle of the indexing
         mv ${warc_cdxj_file_path}_tmp ${warc_cdxj_file_path}
