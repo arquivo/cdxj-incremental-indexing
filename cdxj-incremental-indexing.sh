@@ -74,6 +74,28 @@ function wait_run_in_parallel()
     fi
 }
 
+function warc_open_recompress() {
+    warc_path=$1
+    debug "Recompress warc: $warc_path"
+
+    warc_path_no_file_extension=${warc_path:0:${#warc_path}-8}
+    debug "warc_path_no_file_extension ${warc_path_no_file_extension}"
+        
+    echo "Recompress... ${warc_path} to ${warc_path_no_file_extension}.warc.gz"
+    warcio recompress ${warc_path} ${warc_path_no_file_extension}.warc.gz
+
+    RETVAL=$?
+    if [[ $RETVAL != 0 ]]; then
+        echo "Error recompress... ${warc_path} to ${warc_path_no_file_extension}.warc.gz"
+        rm ${warc_path_no_file_extension}.warc.gz
+    else
+       echo "Good recompress... ${warc_path} to ${warc_path_no_file_extension}.warc.gz"
+       rm ${warc_path}
+    fi
+
+    debug ""
+}
+
 function warc_cdxj_incremental_indexing() {
     collection_warc_path_length=${#COLLECTION_WARC_PATH}
     warc_path=$1
@@ -121,6 +143,7 @@ CDXJ_TEMP_PATH="${CDXJ_FINAL_PATH}_temp"
 CDXJ_TEMP2_PATH="${CDXJ_FINAL_PATH}_temp2"
 BLACKLIST_CDXJ_PATH=${COLLECTION_WARC_PATH}/blacklist_cdxj.txt
 WARCS_FILE_PATH=${CDXJ_INCREMENTAL_PATH}/warcs.txt
+WARCS_FILE_PATH_OPEN=${CDXJ_INCREMENTAL_PATH}/warcs_open.txt
 
 if [ -z ${PARALLEL+x} ]; then 
     PARALLEL_N=0
@@ -129,6 +152,23 @@ else
         PARALLEL_N=`nproc`
     fi
 fi
+
+echo "Recompress (w)arc.gz.open to (w)arc.gz of ${COLLECTION_WARC_PATH}"
+
+# write warc.gz.open to a temporary file
+find "${COLLECTION_WARC_PATH}" -type f -regextype egrep -regex '.*\.(w|)arc\.gz\.open$' > "${WARCS_FILE_PATH_OPEN}"
+
+if [[ -s "${WARCS_FILE_PATH_OPEN}" ]]; then
+    # read each warc from temporary file and execute a function
+    while read line; do
+        warc_open_recompress "$line" &
+
+        wait_run_in_parallel $PARALLEL_N
+    done <"${WARCS_FILE_PATH_OPEN}"
+fi
+
+# wait for pending jobs
+wait
 
 echo "Run a cdxj incremental indexing for each warc of ${COLLECTION_WARC_PATH}"
 
