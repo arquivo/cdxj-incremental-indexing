@@ -204,7 +204,7 @@ cat "${CDXJ_TEMP3_PATH}" | grep -v "\"mime\": \"warc/revisit\"" > "${CDXJ_TEMP_P
 if [ ! -z ${COLLECTION_NAME+x} ]; then 
     echo "Add collection to each line" 
     # can not prefix it with run or print_run function
-    sed -i "s/}$/, \"collection\": \"${COLLECTION_NAME}\"}/g"  "${CDXJ_TEMP_PATH}"
+    sed -i "s/}\$/, \"collection\": \"${COLLECTION_NAME}\"}/g"  "${CDXJ_TEMP_PATH}"
 fi
 
 print_run "Remove temp 2 file" rm "${CDXJ_TEMP2_PATH}"
