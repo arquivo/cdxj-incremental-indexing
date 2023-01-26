@@ -119,7 +119,7 @@ check_options
 # define more variables
 CDXJ_TEMP_PATH="${CDXJ_FINAL_PATH}_temp"
 CDXJ_TEMP2_PATH="${CDXJ_FINAL_PATH}_temp2"
-CDXJ_TEMP3_PATH="${CDXJ_FINAL_PATH}_temp3"
+#CDXJ_TEMP3_PATH="${CDXJ_FINAL_PATH}_temp3"
 BLACKLIST_CDXJ_PATH=${COLLECTION_WARC_PATH}/blacklist_cdxj.txt
 WARCS_FILE_PATH=${CDXJ_INCREMENTAL_PATH}/warcs.txt
 
@@ -159,10 +159,10 @@ find "${CDXJ_INCREMENTAL_PATH}" -type f -name "*.cdxj" -exec cat {} > "${CDXJ_TE
 echo "Concatenate all cdxj files and sort them" 
 
 # use the cdxj folder to put the temporary file during the sort
-cat "${CDXJ_TEMP2_PATH}" | sort -T $(dirname $CDXJ_FINAL_PATH)/ > "${CDXJ_TEMP3_PATH}"
+#cat "${CDXJ_TEMP2_PATH}" | sort -T $(dirname $CDXJ_FINAL_PATH)/ > "${CDXJ_TEMP3_PATH}"
 
 # remove warc/revisit
-cat "${CDXJ_TEMP3_PATH}" | grep -v "\"mime\": \"warc/revisit\"" > "${CDXJ_TEMP_PATH}"
+#cat "${CDXJ_TEMP3_PATH}" | grep -v "\"mime\": \"warc/revisit\"" > "${CDXJ_TEMP_PATH}"
 
 if [ ! -z ${COLLECTION_NAME+x} ]; then 
     echo "Add collection to each line" 
@@ -172,7 +172,7 @@ fi
 
 print_run "Remove temp 2 file" rm "${CDXJ_TEMP2_PATH}"
 
-print_run "Remove temp 3 file" rm "${CDXJ_TEMP3_PATH}"
+#print_run "Remove temp 3 file" rm "${CDXJ_TEMP3_PATH}"
 
 if [ -f "$BLACKLIST_CDXJ_PATH" ]; then
     echo "Remove blacklist cdxj records" 
