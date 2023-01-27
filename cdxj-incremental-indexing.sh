@@ -159,7 +159,7 @@ find "${CDXJ_INCREMENTAL_PATH}" -type f -name "*.cdxj" -exec cat {} > "${CDXJ_TE
 echo "Concatenate all cdxj files and sort them" 
 
 # use the cdxj folder to put the temporary file during the sort
-#cat "${CDXJ_TEMP2_PATH}" | sort -T $(dirname $CDXJ_FINAL_PATH)/ > "${CDXJ_TEMP3_PATH}"
+sort -T "$(dirname "$CDXJ_FINAL_PATH")/" "${CDXJ_TEMP2_PATH}" > "${CDXJ_TEMP_PATH}"
 
 # remove warc/revisit
 #cat "${CDXJ_TEMP3_PATH}" | grep -v "\"mime\": \"warc/revisit\"" > "${CDXJ_TEMP_PATH}"
