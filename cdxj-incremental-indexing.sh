@@ -9,7 +9,7 @@
 #
 function usage() {
     {
-        echo "Usage: $0 -w /path_for_collection_with_warcs -x /path_for_cdxj_incremental_path -o /path_to_cdxj_file [-c collection_name] [-d] [-P] [-p 2] ";
+        echo "Usage: $0 -w /path_for_collection_with_warcs -x /path_for_cdxj_incremental_path -o /path_to_cdxj_file [-f /path_to_filtered_cdxj_file -t url_filter_threshold] [-c collection_name] [-d] [-P] [-p 2] ";
         echo "  -d                       debug mode, print more often"
         echo "  -P                       run in parallel by default is the number of cpus "
         echo "  -p PARALLEL_JOBS_COUNT   number of jobs that is run in parallel"
@@ -18,11 +18,13 @@ function usage() {
 }
 
 function readoptions() {
-    while getopts ":w:x:o:c:p:dP" OPTION; do
+    while getopts ":w:x:o:f:t:c:p:dP" OPTION; do
         case "${OPTION}" in
             w) COLLECTION_WARC_PATH=${OPTARG} ;;
             x) CDXJ_INCREMENTAL_PATH=${OPTARG} ;;
-            o) CDXJ_FINAL_PATH=${OPTARG} ;;
+            o) CDXJ_FINAL_PATH_ORIGINAL=${OPTARG} ;;
+            f) CDXJ_FINAL_PATH_FILTERED=${OPTARG} ;;
+            t) URL_FILTER_THRESHOLD=${OPTARG} ;;
             c) COLLECTION_NAME=${OPTARG} ;;
             p) PARALLEL=true; PARALLEL_N=${OPTARG} ;;
             d) DEBUG=true ;;
@@ -112,16 +114,20 @@ function warc_cdxj_incremental_indexing() {
     debug ""
 }
 
+URL_FILTER_THRESHOLD=1000
+
 readoptions "$@"
 
 check_options
 
 # define more variables
-CDXJ_TEMP_PATH="${CDXJ_FINAL_PATH}_temp"
-CDXJ_TEMP2_PATH="${CDXJ_FINAL_PATH}_temp2"
-#CDXJ_TEMP3_PATH="${CDXJ_FINAL_PATH}_temp3"
-BLACKLIST_CDXJ_PATH=${COLLECTION_WARC_PATH}/blacklist_cdxj.txt
+CDXJ_FILE_TEMP="${CDXJ_FINAL_PATH_ORIGINAL}_tmp"
+CDXJ_UNSORTED="${CDXJ_FINAL_PATH_ORIGINAL}_unsorted"
+BLACKLIST_CDXJ_PATH="$(dirname $0)/blacklist_cdxj.txt"
 WARCS_FILE_PATH=${CDXJ_INCREMENTAL_PATH}/warcs.txt
+EXCESSIVE_URLS_FILE="${CDXJ_INCREMENTAL_PATH}/${COLLECTION_NAME}.urls"
+
+
 
 if [ -z ${PARALLEL+x} ]; then 
     PARALLEL_N=0
@@ -154,36 +160,39 @@ echo "Concatenate each warc cdxj file and sort it."
 # define this variable to sort correcly
 export LC_ALL=C
 
-find "${CDXJ_INCREMENTAL_PATH}" -type f -name "*.cdxj" -exec cat {} > "${CDXJ_TEMP2_PATH}" \;
+find "${CDXJ_INCREMENTAL_PATH}" -type f -name "*.cdxj" -exec cat {} > "${CDXJ_UNSORTED}" \;
 
 echo "Concatenate all cdxj files and sort them" 
 
 # use the cdxj folder to put the temporary file during the sort
-sort -T "$(dirname "$CDXJ_FINAL_PATH")/" "${CDXJ_TEMP2_PATH}" > "${CDXJ_TEMP_PATH}"
-
-# remove warc/revisit
-#cat "${CDXJ_TEMP3_PATH}" | grep -v "\"mime\": \"warc/revisit\"" > "${CDXJ_TEMP_PATH}"
+sort -T "$(dirname "$CDXJ_FINAL_PATH")/" "${CDXJ_UNSORTED}" > "${CDXJ_FINAL_PATH_ORIGINAL}"
+print_run "Remove unsorted file" rm "${CDXJ_UNSORTED}"
 
 if [ ! -z ${COLLECTION_NAME+x} ]; then 
     echo "Add collection to each line" 
     # can not prefix it with run or print_run function
-    sed -i "s/}\$/, \"collection\": \"${COLLECTION_NAME}\"}/g"  "${CDXJ_TEMP_PATH}"
+    sed -i "s/}\$/, \"collection\": \"${COLLECTION_NAME}\"}/g"  "${CDXJ_FINAL_PATH_ORIGINAL}"
 fi
 
-print_run "Remove temp 2 file" rm "${CDXJ_TEMP2_PATH}"
 
-#print_run "Remove temp 3 file" rm "${CDXJ_TEMP3_PATH}"
+[ -f "${BLACKLIST_CDXJ_PATH}" ] && echo "Remove blacklist cdxj records" && grep -E -v -f "${BLACKLIST_CDXJ_PATH}" "${CDXJ_FINAL_PATH_ORIGINAL}" > "${CDXJ_FILE_TEMP}"
 
-if [ -f "$BLACKLIST_CDXJ_PATH" ]; then
-    echo "Remove blacklist cdxj records" 
-    run comm -23 "${CDXJ_TEMP_PATH}" "${BLACKLIST_CDXJ_PATH}" > "${CDXJ_FINAL_PATH}"
-    
-    debug "Remove cdxj temporary file" 
-    run rm -f "${CDXJ_TEMP_PATH}"
+# remove warc/revisit
+#cat "${CDXJ_TEMP3_PATH}" | grep -v "\"mime\": \"warc/revisit\"" > "${CDXJ_TEMP_PATH}"
+
+if [ -n "${CDXJ_FINAL_PATH_FILTERED}" ]; then
+    echo "Finding excessive URLs to filter"
+    [ -f "${EXCESSIVE_URLS_FILE}" ] || "$(dirname $0)/find-excessive-urls.sh" -n "${URL_FILTER_THRESHOLD}" -f "${CDXJ_FILE_TEMP}" > "${EXCESSIVE_URLS_FILE}"
+
+    echo "Filtering excessive URLs in ${EXCESSIVE_URLS_FILE}"
+    "$(dirname $0)/filter-excessive-urls.sh" "${EXCESSIVE_URLS_FILE}" "${CDXJ_FILE_TEMP}" > "${CDXJ_FINAL_PATH_FILTERED}"
+
+    echo "Deleting temp file ${CDXJ_FILE_TEMP}"
+    rm "${CDXJ_FILE_TEMP}"
 else
-    echo "No blacklist cdxj file found"
-    debug "Move temporary cdxj file to final." 
-    run mv "${CDXJ_TEMP_PATH}" ${CDXJ_FINAL_PATH}
+    echo "Moving temp file ${CDXJ_FILE_TEMP}"
+    mv "${CDXJ_FILE_TEMP}" "${CDXJ_FINAL_PATH_FILTERED}"
 fi
 
+echo "Filtered $(( $(wc -l "${CDXJ_FINAL_PATH_ORIGINAL}" | cut -d' ' -f1) - $(wc -l "${CDXJ_FINAL_PATH_FILTERED}" | cut -d' ' -f1) )) items"
 echo "Done!"
