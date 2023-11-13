@@ -9,6 +9,6 @@ BLACKLIST_WORKDIR="$4"
 mkdir -p "$BLACKLIST_WORKDIR"
 cd "$BLACKLIST_WORKDIR"
 
-split "$CDXJ_INPUT_FILE" -d -l/10  "$CDXJ_INPUT_FILE" "part.$(basename $CDXJ_INPUT_FILE)"
-cat part.$(basename $CDXJ_INPUT_FILE)* | parallel -j 10 grep -E -v -f "${BLACKLIST_PATTERNS_FILE}" "{}" > "filtered.{}"
+split "$CDXJ_INPUT_FILE" -d -n l/10  "$CDXJ_INPUT_FILE" "part.$(basename $CDXJ_INPUT_FILE)"
+ls part.$(basename $CDXJ_INPUT_FILE)* | xargs grep -E -v -f "${BLACKLIST_PATTERNS_FILE}" "{}" > "filtered.{}"
 cat filtered.{} > "${CDXJ_OUTPUT_FILE}"
