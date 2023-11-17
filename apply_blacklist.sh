@@ -18,6 +18,6 @@ else
     rm "part.$(basename ${CDXJ_INPUT_FILE})"*
     cat "filtered.part.$(basename ${CDXJ_INPUT_FILE})"* > "${CDXJ_OUTPUT_FILE}"
 
-    cd $OLDPWD
-    rm -rf $workdir
+    cd "$OLDPWD"
+    rm -rf "$workdir"
 fi
