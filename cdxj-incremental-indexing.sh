@@ -174,8 +174,7 @@ if [ ! -z ${COLLECTION_NAME+x} ]; then
     sed -i "s/}\$/, \"collection\": \"${COLLECTION_NAME}\"}/g"  "${CDXJ_FINAL_PATH_ORIGINAL}"
 fi
 
-
-[ -f "${BLACKLIST_CDXJ_PATH}" ] && echo "Remove blacklist cdxj records" && grep -E -v -f "${BLACKLIST_CDXJ_PATH}" "${CDXJ_FINAL_PATH_ORIGINAL}" > "${CDXJ_FILE_TEMP}"
+echo "Removing blacklist cdxj records" && "$(dirname $0)/apply_blacklist.sh" "${CDXJ_FINAL_PATH_ORIGINAL}" "${CDXJ_FILE_TEMP}" "${BLACKLIST_CDXJ_PATH}"
 
 # remove warc/revisit
 #cat "${CDXJ_TEMP3_PATH}" | grep -v "\"mime\": \"warc/revisit\"" > "${CDXJ_TEMP_PATH}"
@@ -194,5 +193,5 @@ else
     mv "${CDXJ_FILE_TEMP}" "${CDXJ_FINAL_PATH_FILTERED}"
 fi
 
-echo "Filtered $(( $(wc -l "${CDXJ_FINAL_PATH_ORIGINAL}" | cut -d' ' -f1) - $(wc -l "${CDXJ_FINAL_PATH_FILTERED}" | cut -d' ' -f1) )) items"
+
 echo "Done!"
