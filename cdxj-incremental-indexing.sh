@@ -123,7 +123,7 @@ check_options
 # define more variables
 CDXJ_FILE_TEMP="${CDXJ_FINAL_PATH_ORIGINAL}_tmp"
 CDXJ_UNSORTED="${CDXJ_FINAL_PATH_ORIGINAL}_unsorted"
-BLACKLIST_CDXJ_PATH="$(dirname $0)/blacklist_cdxj.txt"
+BLACKLIST_CDXJ_PATH="$(dirname $0)/blacklist_patterns.txt"
 WARCS_FILE_PATH=${CDXJ_INCREMENTAL_PATH}/warcs.txt
 EXCESSIVE_URLS_FILE="${CDXJ_INCREMENTAL_PATH}/${COLLECTION_NAME}.urls"
 
