@@ -165,7 +165,7 @@ find "${CDXJ_INCREMENTAL_PATH}" -type f -name "*.cdxj" -exec cat {} > "${CDXJ_UN
 echo "Concatenate all cdxj files and sort them" 
 
 # use the cdxj folder to put the temporary file during the sort
-sort -T "$(dirname "$CDXJ_FINAL_PATH")/" "${CDXJ_UNSORTED}" > "${CDXJ_FINAL_PATH_ORIGINAL}"
+sort -T "/data/" "${CDXJ_UNSORTED}" > "${CDXJ_FINAL_PATH_ORIGINAL}"
 print_run "Remove unsorted file" rm "${CDXJ_UNSORTED}"
 
 if [ ! -z ${COLLECTION_NAME+x} ]; then 
