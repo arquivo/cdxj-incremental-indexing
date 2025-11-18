@@ -41,6 +41,8 @@ Performance:
     - Time Complexity: O(N log k) where N is total lines, k is number of files
     - Space Complexity: O(k) for the heap
     - Memory efficient: only k lines held in memory at once
+
+Author: Ivo Branco / Copilot    
 """
 
 import heapq
