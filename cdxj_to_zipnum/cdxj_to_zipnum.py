@@ -85,7 +85,6 @@ def stream_chunks_from_input(input_path: str, chunk_size: int) -> Iterable[Tuple
     chunk_idx = 0
     with open_input_path(input_path) as fh:
         for line in fh:
-            # keep line bytes including newline
             chunk.append(line)
             if len(chunk) >= chunk_size:
                 yield (chunk_idx, chunk)
@@ -100,7 +99,7 @@ def ensure_dir(path: str):
 
 def cdxj_to_zipnum(output_dir: str, input_path: str, shard_size_mb: int = 100,
                        chunk_size: int = 3000, base: str = None,
-                       idx_name: str = None, loc_name: str = None):
+                       idx_name: str = None, loc_name: str = None, compress_level: int = 6):
     """
     Main logic:
     - open shard gzip files for writing
@@ -140,25 +139,31 @@ def cdxj_to_zipnum(output_dir: str, input_path: str, shard_size_mb: int = 100,
             return os.path.join(output_dir, f"{base}-{shard_num+1:02d}.cdx.gz")
     
     # Open first shard (we'll rename if it ends up being single shard)
+    # Use larger buffer for better I/O performance
     shard_path = get_shard_path(current_shard)
     created_shards.append(shard_path)
-    current_raw_fh = open(shard_path, 'wb')
+    current_raw_fh = open(shard_path, 'wb', buffering=65536)
     
     # Iterate chunks in order and write sequentially to shards
     # This maintains the sorted order for binary search
-    with open(idx_name, 'w', encoding='utf-8') as idxf:
+    
+    # Buffer for idx writes to reduce I/O calls
+    idx_buffer = []
+    idx_buffer_size = 100  # Write idx in batches of 100 entries
+    
+    with open(idx_name, 'w', encoding='utf-8', buffering=65536) as idxf:
         for _, chunk_lines in chunk_generator:
             # Compressed start offset (bytes) inside the gz file
             start_offset = current_raw_fh.tell()
             
             # Compress this chunk as an independent gzip member
             # This is critical for ZipNum: each chunk must be separately decompressible
+            # Use configurable compression level (default 6 for better speed/compression balance)
             chunk_data = b''.join(chunk_lines)
-            compressed_chunk = gzip.compress(chunk_data)
+            compressed_chunk = gzip.compress(chunk_data, compresslevel=compress_level)
             
             # Write compressed chunk to file
             current_raw_fh.write(compressed_chunk)
-            current_raw_fh.flush()
             end_offset = current_raw_fh.tell()
             comp_len = end_offset - start_offset
 
@@ -169,23 +174,36 @@ def cdxj_to_zipnum(output_dir: str, input_path: str, shard_size_mb: int = 100,
             # Remove .cdx.gz extension from shard name for idx file
             shard_name_no_ext = shard_basename.replace('.cdx.gz', '')
             
-            # Write idx entry immediately (streaming, no memory accumulation)
-            idxf.write(f"{pre}\t{shard_name_no_ext}\t{start_offset}\t{comp_len}\t{current_shard + 1}\n")
+            # Buffer idx entries to reduce I/O calls
+            idx_buffer.append(f"{pre}\t{shard_name_no_ext}\t{start_offset}\t{comp_len}\t{current_shard + 1}\n")
+            
+            if len(idx_buffer) >= idx_buffer_size:
+                idxf.write(''.join(idx_buffer))
+                idx_buffer.clear()
             
             # Check if current shard has reached target size
             # Move to next shard if current one is >= target size
             if end_offset >= target_shard_size:
+                # Flush idx buffer before closing shard
+                if idx_buffer:
+                    idxf.write(''.join(idx_buffer))
+                    idx_buffer.clear()
+                
                 # Close current shard file
                 try:
                     current_raw_fh.close()
                 except Exception:
                     pass
                 
-                # Move to next shard and open new file
+                # Move to next shard and open new file with larger buffer
                 current_shard += 1
                 shard_path = get_shard_path(current_shard)
                 created_shards.append(shard_path)
-                current_raw_fh = open(shard_path, 'wb')
+                current_raw_fh = open(shard_path, 'wb', buffering=65536)
+        
+        # Flush any remaining idx entries
+        if idx_buffer:
+            idxf.write(''.join(idx_buffer))
 
     # Close final shard file
     try:
@@ -226,6 +244,8 @@ def parse_args(argv=None):
     p.add_argument('--single-shard', action='store_true',
                    help='Create a single shard file regardless of size (useful for small inputs or testing)')
     p.add_argument('-c', '--chunk-size', type=int, default=3000, help='Lines per chunk (default: 3000)')
+    p.add_argument('--compress-level', type=int, default=6, choices=range(1, 10),
+                   help='Gzip compression level 1-9 (default: 6). Lower=faster, higher=smaller. Level 6 offers best speed/size balance.')
     p.add_argument('--base', type=str, default=None, help='Base name for output files (default: basename of output dir)')
     p.add_argument('--idx-file', type=str, default=None, help='Custom index filename (written inside output dir)')
     p.add_argument('--loc-file', type=str, default=None, help='Custom loc filename (written inside output dir)')
@@ -237,7 +257,8 @@ def main(argv=None):
     shard_size = float('inf') if args.single_shard else args.shard_size
     cdxj_to_zipnum(args.output, args.input, shard_size_mb=shard_size,
                        chunk_size=args.chunk_size, base=args.base,
-                       idx_name=args.idx_file, loc_name=args.loc_file)
+                       idx_name=args.idx_file, loc_name=args.loc_file,
+                       compress_level=args.compress_level)
 
 if __name__ == "__main__":
     main()
